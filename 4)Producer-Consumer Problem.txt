@@ -1,0 +1,84 @@
+4)Producer-Consumer Problem:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define BUFFER_SIZE 5 // Size of the shared buffer
+
+int buffer[BUFFER_SIZE]; // Shared buffer
+int fill = 0; // Position for producer to fill
+int use = 0; // Position for consumer to consume
+int count = 0; // Number of items in the buffer
+
+pthread_mutex_t mutex; // Mutex for synchronization
+sem_t empty; // Semaphore to signal empty slots in the buffer
+sem_t full; // Semaphore to signal full slots in the buffer
+
+void put(int value) {
+    buffer[fill] = value; // Put the value in the buffer
+    fill = (fill + 1) % BUFFER_SIZE; // Update the fill position
+    count++; // Increment the item count in the buffer
+}
+
+int get() {
+    int tmp = buffer[use]; // Get the value from the buffer
+    use = (use + 1) % BUFFER_SIZE; // Update the use position
+    count--; // Decrement the item count in the buffer
+    return tmp;
+}
+
+void *producer(void *arg) {
+    int i;
+    for (i = 0; i < BUFFER_SIZE * 2; i++) {
+        sem_wait(&empty); // Wait for an empty slot
+        pthread_mutex_lock(&mutex); // Acquire the mutex lock
+        put(i); // Put the value into the buffer
+        pthread_mutex_unlock(&mutex); // Release the mutex lock
+        sem_post(&full); // Signal that the buffer is now full
+    }
+    pthread_exit(NULL);
+}
+
+void *consumer(void *arg) {
+    int i, tmp;
+    for (i = 0; i < BUFFER_SIZE * 2; i++) {
+        sem_wait(&full); // Wait for a full slot
+        pthread_mutex_lock(&mutex); // Acquire the mutex lock
+        tmp = get(); // Get the value from the buffer
+        pthread_mutex_unlock(&mutex); // Release the mutex lock
+        sem_post(&empty); // Signal that the buffer is now empty
+        printf("Consumer consumed: %d\n", tmp);
+    }
+    pthread_exit(NULL);
+}
+
+int main() {
+    pthread_t producer_thread, consumer_thread;
+
+    // Initialize the mutex and semaphores
+    pthread_mutex_init(&mutex, NULL);
+    sem_init(&empty, 0, BUFFER_SIZE);
+    sem_init(&full, 0, 0);
+
+    // Create producer and consumer threads
+    pthread_create(&producer_thread, NULL, producer, NULL);
+    pthread_create(&consumer_thread, NULL, consumer, NULL);
+
+    // Join the threads
+    pthread_join(producer_thread, NULL);
+    pthread_join(consumer_thread, NULL);
+
+    // Destroy the mutex and semaphores
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&empty);
+    sem_destroy(&full);
+
+    return 0;
+}
+
+/*
+-gcc Producer-Consumer.c
+-./Producer-Consumer
+*/
