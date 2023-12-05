@@ -1,0 +1,79 @@
+//EXECVE and fork system call program 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+// Function to perform binary search on the sorted array
+int binarySearch(int arr[], int left, int right, int key) {
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == key) return mid;
+        if (arr[mid] < key) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1; // Element not found
+}
+
+int main() {
+    int n, key;
+    printf("Enter the number of elements in the array: ");
+    scanf("%d", &n);
+
+    int arr[n];
+    printf("Enter %d integers in the array:\n", n);
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &arr[i]);
+    }
+
+    // Create a child process
+    pid_t child_pid = fork();
+
+    if (child_pid < 0) {
+        perror("Fork failed");
+        exit(1);
+    }
+
+    if (child_pid == 0) {
+        // Child process
+        // Sort the array in ascending order
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+
+        // Convert the sorted array to a string to pass it as an argument
+        char array_string[256];
+        char key_string[16];
+        sprintf(array_string, "%d", arr[0]);
+        for (int i = 1; i < n; i++) {
+            sprintf(key_string, " %d", arr[i]);
+            strcat(array_string, key_string);
+        }
+
+        // Pass the sorted array as a command-line argument to the child process
+        char *args[] = {"binary_search", array_string, NULL};
+        execve("./binary_search", args, NULL);
+    } else {
+        // Parent process
+        wait(NULL); // Wait for the child process to finish
+
+        // Perform binary search on the sorted array
+        printf("Enter the element you want to search for: ");
+        scanf("%d", &key);
+
+        int result = binarySearch(arr, 0, n - 1, key);
+        if (result != -1) {
+            printf("Element %d found at index %d in the sorted array.\n", key, result);
+        } else {
+            printf("Element %d not found in the sorted array.\n", key);
+        }
+    }
+
+    return 0;
+}

@@ -1,0 +1,81 @@
+3)Matrix Multiplication
+
+//Multithreading Matix Multiplication
+
+#include<stdio.h>
+#include<pthread.h>
+
+int a[10][10], b[10][10], c[10][10];
+int n = 3;
+int no_of_thread;
+
+void print_matrix(int a[10][10]);
+void matrix_read()
+{
+    int i, j;
+    printf("Enter the elements of Matrix-A: \n");
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            scanf("%d", &a[i][j]);
+        }
+    }
+    printf("Enter the elements of Matrix-B: \n");
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            scanf("%d", &b[i][j]);
+        }
+    }
+}
+
+void* multi(void* arg)
+{
+      long int num =(long int) arg;
+    int i, j, k;
+    
+    for (i = num; i < num+1; i++) {
+        for (j = 0; j < n; j++) {
+             c[i][j]=0;
+            for (k = 0; k < n; k++) {
+                c[i][j] += a[i][k] * b[k][j]; 
+            }
+        }
+    }
+    printf("Matrix by thread:%ld",num);
+    print_matrix(c);
+}
+
+void print_matrix(int a[10][10])
+{
+    int i, j;
+    for (i = 0; i < n; i++) {
+        printf("\n");
+        for (j = 0; j < n; j++) {
+            printf("%d ", a[i][j]);
+        }
+    }
+}
+
+
+int main() 
+{
+    long int i, j;
+    pthread_t tid[10];
+    matrix_read();
+    printf("Enter the number of threads: ");
+    scanf("%d", &no_of_thread);
+    
+    for (i = 0; i < no_of_thread; i++) {
+        pthread_create(&tid[i], NULL, multi, (void *)i);
+    }
+    
+    for (j = 0; j < no_of_thread; j++) {
+        pthread_join(tid[j], NULL);
+    }
+    
+    return 0;
+}
+
+/*
+-gcc matrix multiplication.c
+-./matrix multiplication
+*/
